@@ -13,11 +13,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Java
+      - name: Setup Java 21
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Build with Maven
         run: mvn clean install --batch-mode
@@ -41,6 +41,9 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_REGION: us-east-1
 
+    outputs:
+      apiGatewayUrl: ${{ steps.deploy.outputs.apiGatewayUrl }}
+
     steps:
       - uses: actions/checkout@v3
 
@@ -55,11 +58,6 @@ jobs:
           name: jar-artifacts
           path: target
 
-      - name: Debug AWS credentials
-        run: |
-          echo "AWS_ACCESS_KEY_ID set? ${AWS_ACCESS_KEY_ID:+yes}"
-          echo "AWS_SECRET_ACCESS_KEY set? ${AWS_SECRET_ACCESS_KEY:+yes}"
-
       - name: Configure AWS credentials file
         run: |
           mkdir -p ~/.aws
@@ -71,16 +69,21 @@ jobs:
         run: npm install -g serverless
 
       - name: Install serverless-manifest-plugin and deploy
+        id: deploy
         run: |
           serverless plugin install --name serverless-manifest-plugin
-          serverless deploy --stage prd
+          serverless deploy --stage prd --verbose
+
+      - name: Extract API Gateway URL
+        id: extract-api-url
+        run: |
+          API_URL=$(serverless info --stage prd --verbose | grep 'ServiceEndpoint:' | awk '{print $2}')
+          echo "apiGatewayUrl=$API_URL" >> $GITHUB_OUTPUT
 
   deployFrontend:
     needs: deployBackend
-    environment:
-      name: GH_PAGES_TOKEN
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -88,11 +91,13 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v3
 
-      - name: Switch api URL in index.html
+      - name: Substitute API URL in index.html
         run: |
-          sed -i "s/\${URL_TO_SUBSTITUTE}/$(echo '${{ needs.deployBackend.outputs.apiGatewayUrl }}' | sed 's/\//\\\//g')/g" src/main/resources/static/index.html
+          # Escapa barras para o sed
+          ESCAPED_API_URL=$(echo '${{ needs.deployBackend.outputs.apiGatewayUrl }}' | sed 's/\//\\\//g')
+          sed -i "s/\${URL_TO_SUBSTITUTE}/$ESCAPED_API_URL/g" src/main/resources/static/index.html
 
-      - name: Upload artifact
+      - name: Upload artifact to GitHub Pages
         uses: actions/upload-pages-artifact@v2
         with:
           path: 'src/main/resources/static/'
