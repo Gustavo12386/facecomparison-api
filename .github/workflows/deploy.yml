@@ -21,8 +21,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-      
+      - uses: actions/checkout@v3
+
       - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
@@ -36,16 +36,7 @@ jobs:
         run: |
           echo "Conteúdo da pasta target:"
           ls -lh target
-          echo "Conteúdo da pasta target (com caracteres visíveis):"
-          ls target | cat -v
-          echo "Verificando se o JAR foi gerado..."
-          if [ -f target/facecomparsion-0.0.1-SNAPSHOT.jar ]; then
-            echo "Arquivo JAR encontrado."
-          else
-            echo "Arquivo JAR NÃO encontrado."
-            ls -l target
-            exit 1
-          fi
+          test -f target/facecomparsion-0.0.1-SNAPSHOT.jar
 
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v3
@@ -57,23 +48,28 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jar-artifacts
-          path: "target/facecomparsion-0.0.1-SNAPSHOT.jar"
-
+          path: target/facecomparsion-0.0.1-SNAPSHOT.jar
 
   deployBackend:
     needs: build
     runs-on: ubuntu-latest
     environment:
       name: aws
-      url: ${{ steps.manifest.outputs.url }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           name: jar-artifacts
           path: target
+
+      - name: Debug AWS env vars
+        run: |
+          echo "AWS_ACCESS_KEY_ID is set: ${AWS_ACCESS_KEY_ID:+yes}"
+          echo "AWS_SECRET_ACCESS_KEY is set: ${AWS_SECRET_ACCESS_KEY:+yes}"
+
       - name: Install Plugin and Deploy
         uses: serverless/github-action@v3.2
         with:
@@ -82,24 +78,25 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
       - name: manifest
         id: manifest
         run: |
           url=$(cat .serverless/manifest.json | jq -r '.prd.urls.apiGateway')
           echo "::set-output name=url::$url"
+
     outputs:
       apiGatewayUrl: ${{ steps.manifest.outputs.url }}
-      
 
   deployFrontend:
     needs: deployBackend
     environment:
       name: GH_PAGES_TOKEN
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
+
       - name: Setup Pages
         uses: actions/configure-pages@v3
 
@@ -110,8 +107,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
-          path: 'src/main/resources/static/'
-          
+          path: src/main/resources/static/
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v2
