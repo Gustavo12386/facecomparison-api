@@ -22,7 +22,7 @@ plugins:
   - serverless-manifest-plugin
 
 custom:
-  stage: ${sls:stage}
+  stage: ${opt:stage, 'dev'}
   product: youtube
 
 package:
@@ -35,5 +35,5 @@ functions:
     events:
     - http:
         cors: true
-        path: '/facecomparison/{proxy+}'
+        path: '/facecomparsion/{proxy+}'
         method: any
