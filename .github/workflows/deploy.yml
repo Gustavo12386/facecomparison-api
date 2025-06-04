@@ -13,18 +13,17 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Java 21
+      - name: Setup Java
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '17'
 
       - name: Build with Maven
         run: mvn clean install --batch-mode
 
       - name: Verify JAR exists
         run: |
-          echo "Conteúdo da pasta target:"
           ls -lh target
           test -f target/facecomparsion-0.0.1-SNAPSHOT.jar
 
@@ -37,10 +36,6 @@ jobs:
   deployBackend:
     needs: build
     runs-on: ubuntu-latest
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: us-east-1
 
     steps:
       - uses: actions/checkout@v3
@@ -56,22 +51,21 @@ jobs:
           name: jar-artifacts
           path: target
 
-      - name: Set Serverless access token
-        run: echo "SERVERLESS_ACCESS_KEY=${{ secrets.SLS_ACCESS_TOKEN }}" >> $GITHUB_ENV
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-      - name: Install Serverless v3
+      - name: Install Serverless Framework v3
         run: npm install -g serverless@3
 
-      - name: Install serverless-manifest-plugin and deploy
-        run: |
-          serverless plugin install --name serverless-manifest-plugin
-          serverless deploy --stage prd
+      - name: Deploy using Serverless
+        run: serverless deploy --stage prd
 
   deployFrontend:
     needs: deployBackend
-    environment:
-      name: GH_PAGES_TOKEN
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
 
     steps:
@@ -81,15 +75,14 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v3
 
-      - name: Switch API URL in index.html
+      - name: Replace API URL in index.html (ajuste conforme necessário)
         run: |
-          sed -i "s/\${URL_TO_SUBSTITUTE}/https:\/\/your-api-url.amazonaws.com\/prd\/facecomparsion/g" src/main/resources/static/index.html
+          sed -i 's|${URL_TO_SUBSTITUTE}|https://seu-api-gateway-url.amazonaws.com/prd|' src/main/resources/static/index.html
 
-      - name: Upload artifact
+      - name: Upload static files
         uses: actions/upload-pages-artifact@v2
         with:
           path: 'src/main/resources/static/'
 
       - name: Deploy to GitHub Pages
-        id: deployment
         uses: actions/deploy-pages@v2
