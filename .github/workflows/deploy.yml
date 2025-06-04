@@ -44,7 +44,7 @@ jobs:
           report_paths: '**/target/surefire-reports/TEST-*.xml'
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v2.3.1
         with:
           name: jar-artifacts
           path: "target/facecomparison-0.0.1-SNAPSHOT.jar"
@@ -60,7 +60,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Download artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v2.1.1
         with:
           name: jar-artifacts
           path: app/target
