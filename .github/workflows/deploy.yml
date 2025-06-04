@@ -50,7 +50,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jar-artifacts
-          path: "target/facecomparison-0.0.1-SNAPSHOT.jar"
+          path: "target/facecomparsion-0.0.1-SNAPSHOT.jar"
 
   deployBackend:
     needs: build
