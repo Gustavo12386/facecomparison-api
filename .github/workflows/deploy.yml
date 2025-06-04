@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Java
+      - name: Setup Java 21
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
@@ -36,6 +36,10 @@ jobs:
   deployBackend:
     needs: build
     runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: us-east-1
 
     steps:
       - uses: actions/checkout@v3
@@ -58,31 +62,43 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Install Serverless Framework v3
-        run: npm install -g serverless@3
+      - name: Install Serverless Framework CLI
+        run: npm install -g serverless@3.40.0
 
-      - name: Deploy using Serverless
+      - name: Deploy backend with Serverless
         run: serverless deploy --stage prd
+
+      - name: Get API Gateway URL
+        id: gateway
+        run: |
+          OUTPUT=$(serverless info --stage prd --verbose)
+          echo "$OUTPUT"
+          URL=$(echo "$OUTPUT" | grep -Eo 'https://[a-zA-Z0-9\-]+\.execute-api\.[a-z\-]+\.amazonaws\.com/prd')
+          echo "api_url=$URL" >> $GITHUB_OUTPUT
 
   deployFrontend:
     needs: deployBackend
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
       - name: Setup Pages
         uses: actions/configure-pages@v3
 
-      - name: Replace API URL in index.html (ajuste conforme necessário)
+      - name: Replace API URL in index.html
         run: |
-          sed -i 's|${URL_TO_SUBSTITUTE}|https://seu-api-gateway-url.amazonaws.com/prd|' src/main/resources/static/index.html
+          echo "Using API Gateway URL: ${{ needs.deployBackend.outputs.api_url }}"
+          sed -i "s|\${URL_TO_SUBSTITUTE}|${{ needs.deployBackend.outputs.api_url }}|g" src/main/resources/static/index.html
 
-      - name: Upload static files
+      - name: Upload artifact to GitHub Pages
         uses: actions/upload-pages-artifact@v2
         with:
           path: 'src/main/resources/static/'
 
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v2
+
+      - name: Show deployed site URL
+        run: echo "Site deployed at ${{ steps.deployment.outputs.page_url }}"
