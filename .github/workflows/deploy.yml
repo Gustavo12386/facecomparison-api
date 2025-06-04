@@ -24,6 +24,7 @@ jobs:
 
       - name: Verify JAR exists
         run: |
+          echo "Conteúdo da pasta target:"
           ls -lh target
           test -f target/facecomparsion-0.0.1-SNAPSHOT.jar
 
@@ -40,7 +41,6 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_REGION: us-east-1
-      SLS_ACCESS_TOKEN: ${{ secrets.SLS_ACCESS_TOKEN }}
 
     steps:
       - uses: actions/checkout@v3
@@ -56,23 +56,11 @@ jobs:
           name: jar-artifacts
           path: target
 
-      - name: Debug AWS credentials
-        run: |
-          echo "AWS_ACCESS_KEY_ID set? ${AWS_ACCESS_KEY_ID:+yes}"
-          echo "AWS_SECRET_ACCESS_KEY set? ${AWS_SECRET_ACCESS_KEY:+yes}"
-
-      - name: Configure AWS credentials file
-        run: |
-          mkdir -p ~/.aws
-          echo "[default]" > ~/.aws/credentials
-          echo "aws_access_key_id = $AWS_ACCESS_KEY_ID" >> ~/.aws/credentials
-          echo "aws_secret_access_key = $AWS_SECRET_ACCESS_KEY" >> ~/.aws/credentials
+      - name: Set Serverless access token
+        run: echo "SERVERLESS_ACCESS_KEY=${{ secrets.SLS_ACCESS_TOKEN }}" >> $GITHUB_ENV
 
       - name: Install Serverless Framework CLI
         run: npm install -g serverless
-
-      - name: Serverless Framework login
-        run: serverless login --token $SLS_ACCESS_TOKEN
 
       - name: Install serverless-manifest-plugin and deploy
         run: |
@@ -81,7 +69,11 @@ jobs:
 
   deployFrontend:
     needs: deployBackend
+    environment:
+      name: GH_PAGES_TOKEN
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -89,9 +81,9 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v3
 
-      - name: Switch api URL in index.html
+      - name: Switch API URL in index.html
         run: |
-          sed -i "s/\${URL_TO_SUBSTITUTE}/$(echo '${{ needs.deployBackend.outputs.apiGatewayUrl }}' | sed 's/\//\\\//g')/g" src/main/resources/static/index.html
+          sed -i "s/\${URL_TO_SUBSTITUTE}/https:\/\/your-api-url.amazonaws.com\/prd\/facecomparsion/g" src/main/resources/static/index.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2

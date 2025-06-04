@@ -1,29 +1,27 @@
 service: hub-facecomparison-api
 
+frameworkVersion: '~4.16.1'
+
 provider:
   name: aws
   runtime: java17
   region: us-east-1
-  apiName: ${self:service}-${self:custom.stage}
+  stage: ${opt:stage, 'prd'}
+  apiName: ${self:service}-${self:provider.stage}
 
   iamRoleStatements:
     - Effect: Allow
       Action:
         - rekognition:*
-      Resource:
-        - "*"
+      Resource: "*"
 
   environment:
-    stage: ${self:custom.stage}
-    region: ${aws:region} 
+    stage: ${self:provider.stage}
+    region: ${aws:region}
     service: ${self:service}
 
 plugins:
   - serverless-manifest-plugin
-
-custom:
-  stage: ${opt:stage, 'dev'}
-  product: youtube
 
 package:
   artifact: target/facecomparsion-0.0.1-SNAPSHOT.jar
@@ -31,9 +29,9 @@ package:
 functions:
   app:
     handler: com.br.hub.facecomparsion.config.StreamLambdaHandler
-    name: ${self:service}-${self:custom.stage}
+    name: ${self:service}-${self:provider.stage}
     events:
-    - http:
-        cors: true
-        path: '/facecomparsion/{proxy+}'
-        method: any
+      - http:
+          path: facecomparsion/{proxy+}
+          method: any
+          cors: true
