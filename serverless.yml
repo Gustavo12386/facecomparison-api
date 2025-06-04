@@ -1,6 +1,6 @@
 service: hub-facecomparison-api
 
-frameworkVersion: '~4.16.1'
+frameworkVersion: '3'
 
 provider:
   name: aws

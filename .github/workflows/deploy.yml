@@ -59,8 +59,8 @@ jobs:
       - name: Set Serverless access token
         run: echo "SERVERLESS_ACCESS_KEY=${{ secrets.SLS_ACCESS_TOKEN }}" >> $GITHUB_ENV
 
-      - name: Install Serverless Framework CLI
-        run: npm install -g serverless
+      - name: Install Serverless v3
+        run: npm install -g serverless@3
 
       - name: Install serverless-manifest-plugin and deploy
         run: |
