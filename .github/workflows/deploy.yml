@@ -36,50 +36,41 @@ jobs:
   deployBackend:
     needs: build
     runs-on: ubuntu-latest
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: us-east-1
-      
+    environment:
+      name: aws
+      url: ${{ steps.manifest.outputs.url }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      - name: Download artifact
-        uses: actions/download-artifact@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
         with:
           name: jar-artifacts
-          path: target
+          path: app/target
 
-      - name: Debug AWS credentials
+      - name: Install Plugin and Deploy
+        uses: serverless/github-action@v3.2
+        with:
+          args: -c "serverless plugin install --name serverless-manifest-plugin && serverless deploy --stage prd"
+          entrypoint: /bin/sh
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: manifest
+        id: manifest
         run: |
-          echo "AWS_ACCESS_KEY_ID set? ${AWS_ACCESS_KEY_ID:+yes}"
-          echo "AWS_SECRET_ACCESS_KEY set? ${AWS_SECRET_ACCESS_KEY:+yes}"
+          url=$(cat .serverless/manifest.json | jq -r '.prd.urls.apiGateway')
+          echo "::set-output name=url::$url"
 
-      - name: Configure AWS credentials file
-        run: |
-          mkdir -p ~/.aws
-          echo "[default]" > ~/.aws/credentials
-          echo "aws_access_key_id = $AWS_ACCESS_KEY_ID" >> ~/.aws/credentials
-          echo "aws_secret_access_key = $AWS_SECRET_ACCESS_KEY" >> ~/.aws/credentials
-
-      - name: Install Serverless Framework CLI
-        run: npm install -g serverless
-
-    
-      - name: Install serverless-manifest-plugin and deploy
-        run: |
-          serverless plugin install --name serverless-manifest-plugin
-          serverless deploy --stage prd
+    outputs:
+      apiGatewayUrl: ${{ steps.manifest.outputs.url }}
 
   deployFrontend:
     needs: deployBackend
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
