@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
+      
       - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
@@ -48,7 +48,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jar-artifacts
-          path: target/facecomparsion-0.0.1-SNAPSHOT.jar
+          path: "target/facecomparsion-0.0.1-SNAPSHOT.jar"
+
 
   deployBackend:
     needs: build
@@ -65,10 +66,17 @@ jobs:
           name: jar-artifacts
           path: target
 
-      - name: Debug AWS env vars
+      - name: Debug AWS credentials
         run: |
-          echo "AWS_ACCESS_KEY_ID is set: ${AWS_ACCESS_KEY_ID:+yes}"
-          echo "AWS_SECRET_ACCESS_KEY is set: ${AWS_SECRET_ACCESS_KEY:+yes}"
+          echo "AWS_ACCESS_KEY_ID set? ${AWS_ACCESS_KEY_ID:+yes}"
+          echo "AWS_SECRET_ACCESS_KEY set? ${AWS_SECRET_ACCESS_KEY:+yes}"
+
+      - name: Configure AWS credentials file
+        run: |
+          mkdir -p ~/.aws
+          echo "[default]" > ~/.aws/credentials
+          echo "aws_access_key_id = $AWS_ACCESS_KEY_ID" >> ~/.aws/credentials
+          echo "aws_secret_access_key = $AWS_SECRET_ACCESS_KEY" >> ~/.aws/credentials
 
       - name: Install Plugin and Deploy
         uses: serverless/github-action@v3.2
@@ -84,7 +92,6 @@ jobs:
         run: |
           url=$(cat .serverless/manifest.json | jq -r '.prd.urls.apiGateway')
           echo "::set-output name=url::$url"
-
     outputs:
       apiGatewayUrl: ${{ steps.manifest.outputs.url }}
 
@@ -92,10 +99,11 @@ jobs:
     needs: deployBackend
     environment:
       name: GH_PAGES_TOKEN
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
 
       - name: Setup Pages
         uses: actions/configure-pages@v3
@@ -107,7 +115,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
-          path: src/main/resources/static/
+          path: 'src/main/resources/static/'
 
       - name: Deploy to GitHub Pages
         id: deployment
