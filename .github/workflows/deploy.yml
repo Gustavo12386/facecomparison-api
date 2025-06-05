@@ -76,29 +76,4 @@ jobs:
           URL=$(echo "$OUTPUT" | grep -Eo 'https://[a-zA-Z0-9\-]+\.execute-api\.[a-z\-]+\.amazonaws\.com/prd')
           echo "api_url=$URL" >> $GITHUB_OUTPUT
 
-  deployFrontend:
-    needs: deployBackend
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v3
-
-      - name: Replace API URL in index.html
-        run: |
-          echo "Using API Gateway URL: ${{ needs.deployBackend.outputs.api_url }}"
-          sed -i "s|\${URL_TO_SUBSTITUTE}|${{ needs.deployBackend.outputs.api_url }}|g" src/main/resources/static/index.html
-
-      - name: Upload artifact to GitHub Pages
-        uses: actions/upload-pages-artifact@v2
-        with:
-          path: 'src/main/resources/static/'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v2
-
-      - name: Show deployed site URL
-        run: echo "Site deployed at ${{ steps.deployment.outputs.page_url }}"
+ 
