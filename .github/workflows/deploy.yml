@@ -1,7 +1,6 @@
 # Simple workflow for deploying static content to GitHub Pages
 name: Deploy on AWS and GitHub Pages
 
-
 on:
   push:
     branches:
@@ -47,12 +46,20 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Create minimal package.json
+      - name: Create package.json with dependencies
         run: |
-          echo '{ "devDependencies": { "serverless-manifest-plugin": "^1.0.0" } }' > package.json
+          echo '{
+            "devDependencies": {
+              "serverless-manifest-plugin": "^1.0.0",
+              "serverless": "^4.0.0"
+            }
+          }' > package.json
 
-      - name: Install serverless-manifest-plugin
+      - name: Install dependencies
         run: npm install
+
+      - name: Check Serverless version
+        run: serverless --version
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
