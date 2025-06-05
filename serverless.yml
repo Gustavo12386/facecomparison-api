@@ -4,7 +4,7 @@ frameworkVersion: '3'
 
 provider:
   name: aws
-  runtime: java17
+  runtime: java21
   region: us-east-1
   stage: ${opt:stage, 'prd'}
   apiName: ${self:service}-${self:provider.stage}
