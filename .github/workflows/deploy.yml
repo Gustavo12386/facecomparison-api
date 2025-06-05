@@ -40,6 +40,9 @@ jobs:
         with:
           node-version: '18'
 
+      - name: Install dependencies
+        run: npm install
+
       - name: Download JAR artifact
         uses: actions/download-artifact@v4
         with:
@@ -53,10 +56,8 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Install Serverless CLI v3
+      - name: Install Serverless CLI v3 globally
         run: npm install -g serverless@3
 
       - name: Deploy backend with Serverless
-        run: serverless deploy --stage prd
-
-  
+        run: serverless deploy --stage prd  
