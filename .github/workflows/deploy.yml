@@ -35,20 +35,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
       - name: Download JAR artifact
         uses: actions/download-artifact@v4
         with:
           name: jar-artifacts
           path: target
 
-      - name: Install dependencies
-        working-directory: ./backend
-        run: npm install
+      - name: Setup Node.js (necessário para Serverless CLI)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -61,5 +57,4 @@ jobs:
         run: npm install -g serverless@3
 
       - name: Deploy backend with Serverless
-        working-directory: ./backend
         run: serverless deploy --stage prd
