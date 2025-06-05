@@ -40,11 +40,8 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Download JAR artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: jar-artifacts
-          path: target
+      - name: Install dependencies
+        run: npm install
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -58,5 +55,3 @@ jobs:
 
       - name: Deploy backend with Serverless
         run: serverless deploy --stage prd
-
-  
