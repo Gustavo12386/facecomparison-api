@@ -22,12 +22,7 @@ jobs:
       - name: Build with Maven
         run: mvn clean install --batch-mode
 
-      - name: Verify JAR exists
-        run: |
-          ls -lh target
-          test -f target/facecomparsion-0.0.1-SNAPSHOT.jar
-
-      - name: Upload artifact
+      - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
         with:
           name: jar-artifacts
@@ -36,10 +31,6 @@ jobs:
   deployBackend:
     needs: build
     runs-on: ubuntu-latest
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_REGION: us-east-1
 
     steps:
       - uses: actions/checkout@v3
@@ -49,7 +40,7 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Download artifact
+      - name: Download JAR artifact
         uses: actions/download-artifact@v4
         with:
           name: jar-artifacts
@@ -62,18 +53,10 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Install Serverless Framework CLI
-        run: npm install -g serverless@3.40.0
+      - name: Install Serverless CLI v3
+        run: npm install -g serverless@3
 
       - name: Deploy backend with Serverless
         run: serverless deploy --stage prd
-
-      - name: Get API Gateway URL
-        id: gateway
-        run: |
-          OUTPUT=$(serverless info --stage prd --verbose)
-          echo "$OUTPUT"
-          URL=$(echo "$OUTPUT" | grep -Eo 'https://[a-zA-Z0-9\-]+\.execute-api\.[a-z\-]+\.amazonaws\.com/prd')
-          echo "api_url=$URL" >> $GITHUB_OUTPUT
 
   
