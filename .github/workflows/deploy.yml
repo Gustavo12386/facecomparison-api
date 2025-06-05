@@ -50,16 +50,13 @@ jobs:
         run: |
           echo '{
             "devDependencies": {
-              "serverless-manifest-plugin": "^1.0.0",
-              "serverless": "^4.0.0"
+              "serverless": "^4.0.0",
+              "serverless-manifest-plugin": "^1.0.0"
             }
           }' > package.json
 
       - name: Install dependencies
         run: npm install
-
-      - name: Check Serverless version
-        run: serverless --version
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
