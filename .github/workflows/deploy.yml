@@ -1,6 +1,7 @@
 # Simple workflow for deploying static content to GitHub Pages
 name: Deploy on AWS and GitHub Pages
 
+
 on:
   push:
     branches:
@@ -41,7 +42,7 @@ jobs:
           name: jar-artifacts
           path: target
 
-      - name: Setup Node.js (necessário para Serverless CLI)
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
@@ -53,8 +54,8 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Install Serverless CLI v3
-        run: npm install -g serverless@3
+      - name: Install dependencies
+        run: npm install
 
       - name: Deploy backend with Serverless
-        run: serverless deploy --stage prd
+        run: npx serverless deploy --stage prd
