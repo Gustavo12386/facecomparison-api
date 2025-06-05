@@ -56,7 +56,7 @@ jobs:
           path: target
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v3
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -76,4 +76,4 @@ jobs:
           URL=$(echo "$OUTPUT" | grep -Eo 'https://[a-zA-Z0-9\-]+\.execute-api\.[a-z\-]+\.amazonaws\.com/prd')
           echo "api_url=$URL" >> $GITHUB_OUTPUT
 
- 
+  
